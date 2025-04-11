@@ -9,12 +9,14 @@ class Toodo extends Equatable {
   final String title;
   final String category;
   final String content;
+  final DateTime? dueDate;
 
   const Toodo({
     required this.id,
     required this.title,
     required this.content,
     required this.category,
+    this.dueDate,
   });
 
 
@@ -24,6 +26,7 @@ class Toodo extends Equatable {
     'title': title,
     'content': content,
     'category': category,
+    'dueDate': dueDate?.toIso8601String(),
   };
 
   factory Toodo.fromJson(Map<String, dynamic> json) => Toodo(
@@ -31,10 +34,11 @@ class Toodo extends Equatable {
     title: json['title'],
     content: json['content'],
     category: json['category'],
+    dueDate: json['dueDate'] != null ? DateTime.parse(json['dueDate']) : null,
   );
 
   @override
-  List<Object?> get props => [id, title, content, category];
+  List<Object?> get props => [id, title, content, category, dueDate];
 }
 
 // --- Events ---
@@ -117,6 +121,7 @@ class TodoBloc extends Bloc<ToodoEvent, ToodoState> {
     emit(ToodoLoading());
     try {
       await _loadTodos();
+      _todos.sort((a, b) => a.dueDate?.compareTo(b.dueDate ?? DateTime.now()) ?? 0);
       emit(_filterTodosByCategory());
     } catch (e) {
       emit(ToodoError('Failed to load todos: $e'));

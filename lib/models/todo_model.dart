@@ -5,6 +5,7 @@ class Todo extends Equatable {
   final String title;
   final String category;
   final String content;
+  final DateTime? dueDate;
 
   // Constructor
   const Todo({
@@ -12,6 +13,7 @@ class Todo extends Equatable {
     required this.title,
     required this.content,
     required this.category,
+    this.dueDate,
   });
 
   // Convert to JSON
@@ -20,6 +22,7 @@ class Todo extends Equatable {
     'title': title,
     'content': content,
     'category': category,
+    'dueDate': dueDate?.toIso8601String(),
   };
 
   // Convert from JSON
@@ -28,9 +31,12 @@ class Todo extends Equatable {
     title: json['title'],
     content: json['content'],
     category: json['category'],
+    dueDate: json['dueDate'] != null
+        ? DateTime.parse(json['dueDate'])
+        : null,
   );
 
   @override
-  List<Object?> get props => [id, title, content, category];
+  List<Object?> get props => [id, title, content, category, dueDate];
 
 }

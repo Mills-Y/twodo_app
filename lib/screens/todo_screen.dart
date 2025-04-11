@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:table_calendar/table_calendar.dart';
 import '../block/toodo_block.dart' as block;
 
 class TodoScreen extends StatefulWidget {
@@ -10,6 +11,17 @@ class TodoScreen extends StatefulWidget {
 class _TodoScreenState extends State<TodoScreen> {
   final TextEditingController _controller = TextEditingController();
   String _selectedCategory = 'Work';
+  DateTime? _selectedDate; // Variable to store the selected date
+  DateTime _focusedDay = DateTime.now(); // Current focused day for the calendar
+  CalendarFormat _calendarFormat = CalendarFormat.month; // Calendar format
+
+  // Function to go to the current date
+  void _goToCurrentDate() {
+    setState(() {
+      _focusedDay = DateTime.now(); // Set focused day to current date
+      _selectedDate = DateTime.now(); // Optionally set selected date to current date
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +34,7 @@ class _TodoScreenState extends State<TodoScreen> {
           decoration: BoxDecoration(
             color: Colors.black, // Background color for the terminal
             border: Border.all(color: Colors.grey, width: 2), // Terminal border
-            borderRadius: BorderRadius.circular(10), // Rounded corners
+            borderRadius: BorderRadius.circular(0), // Rounded corners
             boxShadow: [
               BoxShadow(
                 color: Colors.green.withOpacity(0.5), // Shadow color
@@ -34,6 +46,67 @@ class _TodoScreenState extends State<TodoScreen> {
           ),
           child: Column(
             children: [
+              // Calendar widget
+              TableCalendar(
+                headerStyle: HeaderStyle(
+                  formatButtonTextStyle: TextStyle(color: Colors.white, fontFamily: 'monospace'),
+                  formatButtonDecoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey, width: 1),
+                    borderRadius: BorderRadius.circular(0),
+                  ),
+                ),
+                focusedDay: _focusedDay,
+                firstDay: DateTime.utc(2020, 1, 1),
+                lastDay: DateTime.utc(DateTime.now().year + 1, DateTime.now().month, DateTime.now().day),
+                selectedDayPredicate: (day) {
+                  return isSameDay(_selectedDate, day);
+                },
+                onDaySelected: (selectedDay, focusedDay) {
+                  setState(() {
+                    _selectedDate = selectedDay; // Store the selected date
+                    _focusedDay = focusedDay; // Update the focused day
+                  });
+                },
+                onFormatChanged: (format) {
+                  setState(() {
+                    _calendarFormat = format;
+                  });
+                },
+                calendarFormat: _calendarFormat,
+                calendarStyle: CalendarStyle(
+                  selectedDecoration: BoxDecoration(
+                    color: Colors.green, // Highlight color for selected date
+                    shape: BoxShape.rectangle,
+                    borderRadius: BorderRadius.circular(0),
+                  ),
+                  todayDecoration: BoxDecoration(
+                    color: Colors.yellow[700], // Highlight color for today's date
+                    shape: BoxShape.rectangle,
+                    borderRadius: BorderRadius.circular(0),
+                  ),
+                  defaultDecoration: BoxDecoration(
+                    color: Colors.grey[700], // Default date color
+                    shape: BoxShape.rectangle,
+                    borderRadius: BorderRadius.circular(0),
+                  ),
+                  weekendDecoration: BoxDecoration(
+                    color: Colors.grey[100], // Weekend date color
+                    shape: BoxShape.rectangle,
+                    borderRadius: BorderRadius.circular(0),
+                  ),
+                ),
+              ),
+              // Button to go to current date
+              ElevatedButton(
+                onPressed: _goToCurrentDate,
+                child: Text('Go to Current Date', style: TextStyle(fontFamily: 'monospace')),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.yellow[700],
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(0), // Sharp corners
+                  ),
+                ),
+              ),
               // Terminal-like input field
               Padding(
                 padding: const EdgeInsets.all(8.0),
@@ -90,9 +163,12 @@ class _TodoScreenState extends State<TodoScreen> {
                 onPressed: () {
                   _addTodo(context);
                 },
-                child: const Text('Add Todo'),
+                child: const Text('Add Todo', style: TextStyle(fontFamily: 'monospace')),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green, // Use backgroundColor instead of primary
+                  backgroundColor: Colors.green,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(0), // Sharp corners
+                  ),
                 ),
               ),
               Expanded(
@@ -111,6 +187,12 @@ class _TodoScreenState extends State<TodoScreen> {
                                 todo.title,
                                 style: TextStyle(color: Colors.white, fontFamily: 'monospace'),
                               ),
+                              subtitle: Text(
+                                todo.dueDate != null
+                                    ? 'Due: ${todo.dueDate!.year}-${todo.dueDate!.month}-${todo.dueDate!.day}'
+                                    : 'No due date',
+                                style: TextStyle(color: Colors.grey, fontFamily: 'monospace'),
+                              ),
                               trailing: IconButton(
                                 icon: Icon(Icons.delete, color: Colors.red),
                                 onPressed: () {
@@ -124,6 +206,12 @@ class _TodoScreenState extends State<TodoScreen> {
                               title: Text(
                                 todo.title,
                                 style: TextStyle(color: Colors.white, fontFamily: 'monospace'),
+                              ),
+                              subtitle: Text(
+                                todo.dueDate != null
+                                    ? 'Due: ${todo.dueDate!.year}-${todo.dueDate!.month}-${todo.dueDate!.day}'
+                                    : 'No due date',
+                                style: TextStyle(color: Colors.grey, fontFamily: 'monospace'),
                               ),
                               trailing: IconButton(
                                 icon: Icon(Icons.delete, color: Colors.red),
@@ -155,6 +243,7 @@ class _TodoScreenState extends State<TodoScreen> {
         title: _controller.text,
         content: '', // You can add content if needed
         category: _selectedCategory,
+        dueDate: _selectedDate, // Add the selected date to the todo
       );
 
       // Dispatch the AddTodo event
