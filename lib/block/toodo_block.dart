@@ -4,6 +4,7 @@ import 'package:equatable/equatable.dart';
 import 'dart:convert';
 import '../models/todo_model.dart';
 
+// --- Toodo Model ---
 class Toodo extends Equatable {
   final String id;
   final String title;
@@ -18,8 +19,6 @@ class Toodo extends Equatable {
     required this.category,
     this.dueDate,
   });
-
-
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -51,6 +50,13 @@ abstract class ToodoEvent extends Equatable {
 class ToodoAdded extends ToodoEvent {
   final Toodo todo;
   const ToodoAdded(this.todo);
+  @override
+  List<Object?> get props => [todo];
+}
+
+class EditToodo extends ToodoEvent {
+  final Toodo todo;
+  const EditToodo(this.todo);
   @override
   List<Object?> get props => [todo];
 }
@@ -99,7 +105,7 @@ class ToodoError extends ToodoState {
   List<Object?> get props => [message];
 }
 
-// --- Bloc --
+// --- Bloc ---
 class TodoBloc extends Bloc<ToodoEvent, ToodoState> {
   List<Toodo> _todos = [];
   String selectedCategory = 'All';
@@ -111,13 +117,13 @@ class TodoBloc extends Bloc<ToodoEvent, ToodoState> {
     on<ToodoDeleted>(_onTodoDeleted);
     on<ToodoRequested>(_onTodoRequested);
     on<CategoryChanged>(_onCategoryChanged);
-
+    on<EditToodo>(_onEditTodo);
+    _loadTodos();
     // Load todos when the block is initialized
     add(ToodoRequested());
   }
 
-  Future<void> _onTodoRequested(
-      ToodoRequested event, Emitter<ToodoState> emit) async {
+  Future<void> _onTodoRequested(ToodoRequested event, Emitter<ToodoState> emit) async {
     emit(ToodoLoading());
     try {
       await _loadTodos();
@@ -132,6 +138,17 @@ class TodoBloc extends Bloc<ToodoEvent, ToodoState> {
     _todos.add(event.todo);
     await _saveTodos();
     emit(_filterTodosByCategory());
+  }
+
+  Future<void> _onEditTodo(EditToodo event, Emitter<ToodoState> emit) async {
+    final index = _todos.indexWhere((todo) => todo.id == event.todo.id);
+    if (index != -1) {
+      _todos[index] = event.todo; // Update the todo in the list
+      await _saveTodos(); // Save the updated list
+      emit(_filterTodosByCategory()); // Emit the updated state
+    } else {
+      print('Todo with id ${event.todo.id} not found.');
+    }
   }
 
   Future<void> _onTodoDeleted(ToodoDeleted event, Emitter<ToodoState> emit) async {
@@ -173,11 +190,11 @@ class TodoBloc extends Bloc<ToodoEvent, ToodoState> {
     }
     // Return filtered todos based on the selected category
     if (selectedCategory == 'Work') {
-      return ToodoLoaded(filteredWorkTodos.cast<Toodo>(), [], selectedCategory);
+      return ToodoLoaded(filteredWorkTodos, [], selectedCategory);
     } else if (selectedCategory == 'Personal') {
-      return ToodoLoaded([], filteredPersonalTodos.cast<Toodo>(), selectedCategory);
+      return ToodoLoaded([], filteredPersonalTodos, selectedCategory);
     } else {
-      return ToodoLoaded(filteredWorkTodos.cast<Toodo>(), filteredPersonalTodos.cast<Toodo>(), selectedCategory);
+      return ToodoLoaded(filteredWorkTodos, filteredPersonalTodos, selectedCategory);
     }
   }
 }
