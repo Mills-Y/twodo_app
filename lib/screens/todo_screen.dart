@@ -11,47 +11,186 @@ class TodoScreen extends StatefulWidget {
 class _TodoScreenState extends State<TodoScreen> {
   final TextEditingController _controller = TextEditingController();
   String _selectedCategory = 'Work';
-  DateTime? _selectedDate; // Variable to store the selected date
-  DateTime _focusedDay = DateTime.now(); // Current focused day for the calendar
-  CalendarFormat _calendarFormat = CalendarFormat.month; // Calendar format
+  DateTime? _selectedDate;
+  DateTime _focusedDay = DateTime.now();
+  CalendarFormat _calendarFormat = CalendarFormat.month;
 
-  // Function to go to the current date
   void _goToCurrentDate() {
     setState(() {
-      _focusedDay = DateTime.now(); // Set focused day to current date
-      _selectedDate = DateTime.now(); // Optionally set selected date to current date
+      _focusedDay = DateTime.now();
+      _selectedDate = DateTime.now();
     });
+  }
+
+  void _editTodo(BuildContext context, block.Toodo todo) {
+    final TextEditingController titleController = TextEditingController(text: todo.title);
+    String? _editedCategory = todo.category;
+    DateTime? _editedDueDate = todo.dueDate;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.black,
+          title: Text('Edit Todo', style: TextStyle(fontFamily: 'monospace', color: Colors.yellow, fontWeight: FontWeight.bold)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildTextField(titleController, 'Title: '),
+                SizedBox(height: 10),
+                _buildCategoryDropdown(_editedCategory, (newValue) {
+                  setState(() {
+                    _editedCategory = newValue;
+                  });
+                }),
+                SizedBox(height: 10),
+                _buildDueDateRow(context, _editedDueDate, (pickedDate) {
+                  setState(() {
+                    _editedDueDate = pickedDate;
+                  });
+                }),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cancel', style: TextStyle(fontFamily: 'monospace', color: Colors.red)),
+            ),
+            TextButton(
+              onPressed: () {
+                if (titleController.text.isNotEmpty) {
+                  final updatedTodo = block.Toodo(
+                    id: todo.id,
+                    title: titleController.text,
+                    content: todo.content,
+                    category: _editedCategory ?? todo.category,
+                    dueDate: _editedDueDate,
+                  );
+
+                  context.read<block.TodoBloc>().add(block.EditToodo(updatedTodo));
+                  Navigator.of(context).pop();
+                }
+              },
+              child: Text('Save', style: TextStyle(fontFamily: 'monospace', color: Colors.green)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildTextField(TextEditingController controller, String label) {
+    return Row(
+      children: [
+        Text(label, style: TextStyle(color: Colors.green, fontFamily: 'monospace')),
+        Expanded(
+          child: TextField(
+            controller: controller,
+            style: TextStyle(color: Colors.white, fontFamily: 'monospace'),
+            decoration: InputDecoration(
+              hintText: 'Enter title',
+              hintStyle: TextStyle(color: Colors.grey),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.black),
+              ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.black),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategoryDropdown(String? selectedCategory, ValueChanged<String?> onChanged) {
+    return Row(
+      children: [
+        Text('Category: ', style: TextStyle(color: Colors.green, fontFamily: 'monospace')),
+        Expanded(
+          child: DropdownButton<String>(
+            value: selectedCategory,
+            dropdownColor: Colors.black,
+            items: <String>['Work', 'Personal'].map((String value) {
+              return DropdownMenuItem<String>(
+                value: value,
+                child: Text(value, style: TextStyle(color: Colors.white, fontFamily: 'monospace')),
+              );
+            }).toList(),
+            onChanged: onChanged,
+            hint: Text('Select Category', style: TextStyle(color: Colors.grey, fontFamily: 'monospace')),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDueDateRow(BuildContext context, DateTime? dueDate, ValueChanged<DateTime?> onDateChanged) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          dueDate != null
+              ? ' Due: ${dueDate.year}-${dueDate.month}-${dueDate.day}'
+              : '>Empty...',
+          style: TextStyle(color: Colors.white, fontFamily: 'monospace'),
+        ),
+        ElevatedButton(
+          onPressed: () async {
+            final DateTime? pickedDate = await showDatePicker(
+              context: context,
+              initialDate: dueDate ?? DateTime.now(),
+              firstDate: DateTime(2020),
+              lastDate: DateTime(2030),
+            );
+            onDateChanged(pickedDate);
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.black,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(0),
+            ),
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+            minimumSize: Size(100, 10),
+          ),
+          child: Text('Edit Due Date', style: TextStyle(fontFamily: 'monospace', color: Colors.yellow)),
+        ),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black, // Background color for the entire screen
+      backgroundColor: Colors.black,
       body: Center(
         child: Container(
-          width: 600, // Set a fixed width for the terminal-like container
-          height: 800, // Set a fixed height for the terminal-like container
+          width: 600,
+          height: 800,
           decoration: BoxDecoration(
-            color: Colors.black, // Background color for the terminal
-            border: Border.all(color: Colors.grey, width: 2), // Terminal border
-            borderRadius: BorderRadius.circular(0), // Rounded corners
+            color: Colors.black,
+            border: Border.all(color: Colors.grey, width: 2),
+            borderRadius: BorderRadius.circular(0),
             boxShadow: [
               BoxShadow(
-                color: Colors.green.withOpacity(0.5), // Shadow color
+                color: Colors.green.withOpacity(0.5),
                 spreadRadius: 5,
                 blurRadius: 15,
-                offset: Offset(0, 3), // Changes position of shadow
+                offset: Offset(0, 3),
               ),
             ],
           ),
           child: Column(
             children: [
-              // Calendar widget
               TableCalendar(
                 headerStyle: HeaderStyle(
-                  formatButtonTextStyle: TextStyle(color: Colors.white, fontFamily: 'monospace'),
+                  formatButtonTextStyle: TextStyle(color: Colors.white, fontFamily: 'monospace', fontSize: 16),
                   formatButtonDecoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey, width: 1),
+                    border: Border.all(color: Colors.black, width: 1),
                     borderRadius: BorderRadius.circular(0),
                   ),
                 ),
@@ -63,8 +202,8 @@ class _TodoScreenState extends State<TodoScreen> {
                 },
                 onDaySelected: (selectedDay, focusedDay) {
                   setState(() {
-                    _selectedDate = selectedDay; // Store the selected date
-                    _focusedDay = focusedDay; // Update the focused day
+                    _selectedDate = selectedDay;
+                    _focusedDay = focusedDay;
                   });
                 },
                 onFormatChanged: (format) {
@@ -75,100 +214,53 @@ class _TodoScreenState extends State<TodoScreen> {
                 calendarFormat: _calendarFormat,
                 calendarStyle: CalendarStyle(
                   selectedDecoration: BoxDecoration(
-                    color: Colors.green, // Highlight color for selected date
+                    color: Colors.green,
                     shape: BoxShape.rectangle,
                     borderRadius: BorderRadius.circular(0),
                   ),
                   todayDecoration: BoxDecoration(
-                    color: Colors.yellow[700], // Highlight color for today's date
+                    color: Colors.yellow[700],
                     shape: BoxShape.rectangle,
                     borderRadius: BorderRadius.circular(0),
                   ),
                   defaultDecoration: BoxDecoration(
-                    color: Colors.grey[700], // Default date color
+                    color: Colors.grey[700],
                     shape: BoxShape.rectangle,
                     borderRadius: BorderRadius.circular(0),
                   ),
                   weekendDecoration: BoxDecoration(
-                    color: Colors.grey[100], // Weekend date color
+                    color: Colors.grey[100],
                     shape: BoxShape.rectangle,
                     borderRadius: BorderRadius.circular(0),
                   ),
                 ),
               ),
-              // Button to go to current date
               ElevatedButton(
                 onPressed: _goToCurrentDate,
-                child: Text('Go to Current Date', style: TextStyle(fontFamily: 'monospace')),
+                child: Text('Go to Current Date', style: TextStyle(fontFamily: 'monospace', color: Colors.black, fontSize: 17)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.yellow[700],
+                  backgroundColor: Colors.grey[700],
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(0), // Sharp corners
+                    borderRadius: BorderRadius.circular(0),
                   ),
                 ),
               ),
-              // Terminal-like input field
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  children: [
-                    Text(
-                      '> ', // Terminal prompt
-                      style: TextStyle(color: Colors.green, fontFamily: 'monospace'),
-                    ),
-                    Expanded(
-                      child: TextField(
-                        controller: _controller,
-                        style: TextStyle(color: Colors.white, fontFamily: 'monospace'),
-                        decoration: InputDecoration(
-                          border: InputBorder.none,
-                          hintText: 'Enter task...',
-                          hintStyle: TextStyle(color: Colors.grey),
-                        ),
-                        onSubmitted: (value) => _addTodo(context), // Add todo on enter
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Dropdown for category selection
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: DropdownButton<String>(
-                  items: <String>['Work', 'Personal'].map((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(
-                        value,
-                        style: TextStyle(color: Colors.white, fontFamily: 'monospace'),
-                      ),
-                    );
-                  }).toList(),
-                  value: _selectedCategory,
-                  onChanged: (String? newValue) {
+                child: TodoInput(
+                  controller: _controller,
+                  selectedCategory: _selectedCategory,
+                  onCategoryChanged: (newValue) {
                     if (newValue != null) {
                       setState(() {
                         _selectedCategory = newValue;
                       });
-                      // Dispatch the category change event
                       context.read<block.TodoBloc>().add(block.CategoryChanged(newValue));
                     }
                   },
-                  dropdownColor: Colors.black, // Dropdown background color
-                  hint: Text('Select Category', style: TextStyle(color: Colors.grey)),
-                ),
-              ),
-              // Add Todo button
-              ElevatedButton(
-                onPressed: () {
-                  _addTodo(context);
-                },
-                child: const Text('Add Todo', style: TextStyle(fontFamily: 'monospace')),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(0), // Sharp corners
-                  ),
+                  onAddTodo: () {
+                    _addTodo(context);
+                  },
                 ),
               ),
               Expanded(
@@ -182,49 +274,14 @@ class _TodoScreenState extends State<TodoScreen> {
                       return ListView(
                         children: [
                           ...state.workTodos.map((todo) {
-                            return ListTile(
-                              title: Text(
-                                todo.title,
-                                style: TextStyle(color: Colors.white, fontFamily: 'monospace'),
-                              ),
-                              subtitle: Text(
-                                todo.dueDate != null
-                                    ? 'Due: ${todo.dueDate!.year}-${todo.dueDate!.month}-${todo.dueDate!.day}'
-                                    : 'No due date',
-                                style: TextStyle(color: Colors.grey, fontFamily: 'monospace'),
-                              ),
-                              trailing: IconButton(
-                                icon: Icon(Icons.delete, color: Colors.red),
-                                onPressed: () {
-                                  context.read<block.TodoBloc>().add(block.ToodoDeleted(todo.id));
-                                },
-                              ),
-                            );
-                          }).toList(),
-                          ...state.personalTodos.map((todo) {
-                            return ListTile(
-                              title: Text(
-                                todo.title,
-                                style: TextStyle(color: Colors.white, fontFamily: 'monospace'),
-                              ),
-                              subtitle: Text(
-                                todo.dueDate != null
-                                    ? 'Due: ${todo.dueDate!.year}-${todo.dueDate!.month}-${todo.dueDate!.day}'
-                                    : 'No due date',
-                                style: TextStyle(color: Colors.grey, fontFamily: 'monospace'),
-                              ),
-                              trailing: IconButton(
-                                icon: Icon(Icons.delete, color: Colors.red),
-                                onPressed: () {
-                                  context.read<block.TodoBloc>().add(block.ToodoDeleted(todo.id));
-                                },
-                              ),
-                            );
+                            return _buildTodoTile(context, todo);
+                          }).toList(), ...state.personalTodos.map((todo) {
+                            return _buildTodoTile(context, todo);
                           }).toList(),
                         ],
                       );
                     }
-                    return Center(child: Text('No todos available.', style: TextStyle(color: Colors.white)));
+                    return Center(child: Text('No todos available.', style: TextStyle(color: Colors.white, fontFamily: 'monospace')));
                   },
                 ),
               ),
@@ -235,29 +292,119 @@ class _TodoScreenState extends State<TodoScreen> {
     );
   }
 
+  Widget _buildTodoTile(BuildContext context, block.Toodo todo) {
+    return ListTile(
+      title: Text(
+        todo.title,
+        style: TextStyle(color: Colors.white, fontFamily: 'monospace'),
+      ),
+      subtitle: Text(
+        todo.dueDate != null
+            ? 'Due: ${todo.dueDate!.year}-${todo.dueDate!.month}-${todo.dueDate!.day}'
+            : 'No due date',
+        style: TextStyle(color: Colors.grey, fontFamily: 'monospace'),
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: Icon(Icons.edit, color: Colors.grey),
+            onPressed: () {
+              _editTodo(context, todo);
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.delete, color: Colors.red),
+            onPressed: () {
+              context.read<block.TodoBloc>().add(block.ToodoDeleted(todo.id));
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   void _addTodo(BuildContext context) {
     if (_controller.text.isNotEmpty) {
-      // Create a new Toodo object
       final newTodo = block.Toodo(
-        id: DateTime.now().toString(), // Generate a unique ID
+        id: DateTime.now().toString(),
         title: _controller.text,
-        content: '', // You can add content if needed
+        content: '',
         category: _selectedCategory,
-        dueDate: _selectedDate, // Add the selected date to the todo
+        dueDate: _selectedDate,
       );
 
-      // Dispatch the AddTodo event
       context.read<block.TodoBloc>().add(block.ToodoAdded(newTodo));
       _controller.clear();
-      // Optionally show a snackbar or a message to confirm addition
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Todo added successfully!')),
+        SnackBar(content: Text('Todo added successfully!', style: TextStyle(fontFamily: 'monospace'))),
       );
     } else {
-      // Optionally show a message if the input is empty
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please enter a task.')),
+        SnackBar(content: Text('Please enter a task.', style: TextStyle(fontFamily: 'monospace'))),
       );
     }
+  }
+}
+
+class TodoInput extends StatelessWidget {
+  final TextEditingController controller;
+  final String selectedCategory;
+  final ValueChanged<String?> onCategoryChanged;
+  final VoidCallback onAddTodo;
+
+  TodoInput({
+    required this.controller,
+    required this.selectedCategory,
+    required this.onCategoryChanged,
+    required this.onAddTodo,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: controller,
+            style: TextStyle(color: Colors.white, fontFamily: 'monospace'),
+            decoration: InputDecoration(
+              border: InputBorder.none,
+              hintText: '>Add todo...',
+              hintStyle: TextStyle(color: Colors.white),
+            ),
+            onSubmitted: (value) => onAddTodo(),
+          ),
+        ),
+        Container(
+          width: 103, // Set the desired width for the dropdown
+          child: DropdownButton<String>(
+            value: selectedCategory,
+            items: <String>['Work', 'Personal'].map((String value) {
+              return DropdownMenuItem<String>(
+                value: value,
+                child: Text(value, style: TextStyle(color: Colors.white, fontFamily: 'monospace')),
+              );
+            }).toList(),
+            onChanged: onCategoryChanged,
+            dropdownColor: Colors.black,
+            hint: Text('Select', style: TextStyle(color: Colors.grey)),
+          ),
+        ),
+        SizedBox(width: 40), // Add spacing between the dropdown and the button
+        ElevatedButton(
+          onPressed: onAddTodo,
+          child: const Text('Enter', style: TextStyle(fontFamily: 'monospace', color: Colors.black, fontSize: 17, fontWeight: FontWeight.bold)),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.green,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(0),
+            ),
+            padding: EdgeInsets.symmetric(horizontal: 15, vertical: 2), // Adjust padding
+            minimumSize: Size(100, 30), // Adjust minimum size if needed
+          ),
+        ),
+      ],
+    );
   }
 }
