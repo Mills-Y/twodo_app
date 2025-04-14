@@ -3,9 +3,21 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'block/toodo_block.dart';
 import 'screens/todo_screen.dart';
+import 'package:provider/provider.dart';
 
-void main() {
-  runApp(MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized(); // Ensure Flutter is initialized
+  final SharedPreferences prefs = await SharedPreferences.getInstance(); // Initialize SharedPreferences
+
+  runApp(
+    MultiProvider(
+      providers: [
+        Provider<SharedPreferences>(create: (_) => prefs), // Provide SharedPreferences
+        Provider<TodoBloc>(create: (context) => TodoBloc(context.read<SharedPreferences>())), // Pass SharedPreferences to TodoBloc
+      ],
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
