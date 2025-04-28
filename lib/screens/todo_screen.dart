@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../block/toodo_block.dart' as block;
+import '../models/todo_model.dart';
 
 class TodoScreen extends StatefulWidget {
   @override
@@ -22,7 +23,7 @@ class _TodoScreenState extends State<TodoScreen> {
     });
   }
 
-  void _editTodo(BuildContext context, block.Toodo todo) {
+  void _editTodo(BuildContext context, Todo todo) {
     final TextEditingController titleController = TextEditingController(text: todo.title);
     String? _editedCategory = todo.category;
     DateTime? _editedDueDate = todo.dueDate;
@@ -63,7 +64,7 @@ class _TodoScreenState extends State<TodoScreen> {
             TextButton(
               onPressed: () {
                 if (titleController.text.isNotEmpty) {
-                  final updatedTodo = block.Toodo(
+                  final updatedTodo = Todo(
                     id: todo.id,
                     title: titleController.text,
                     content: todo.content,
@@ -292,7 +293,7 @@ class _TodoScreenState extends State<TodoScreen> {
     );
   }
 
-  Widget _buildTodoTile(BuildContext context, block.Toodo todo) {
+  Widget _buildTodoTile(BuildContext context, Todo todo) {
     return ListTile(
       title: Text(
         todo.title,
@@ -326,7 +327,7 @@ class _TodoScreenState extends State<TodoScreen> {
 
   void _addTodo(BuildContext context) {
     if (_controller.text.isNotEmpty) {
-      final newTodo = block.Toodo(
+      final newTodo = Todo(
         id: DateTime.now().toString(),
         title: _controller.text,
         content: '',
