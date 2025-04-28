@@ -23,16 +23,16 @@ class DatabaseService {
     });
   }
 
-    // Get all Todos
-    Stream<List<Todo>> getTodos() {
-      return _firestore.collection('todos').snapshots().map((snapshot) {
-        return snapshot.docs.map((doc) {
-          return Todo(
-            id: doc.id,
-            title: doc['title'],
-            category: doc['category'], content: '',
-          );
-        }).toList();
-      });
-    }
+  // Get all Todos
+  Stream<List<Todo>> getTodos() {
+    return _firestore.collection('todos').snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) {
+        return Todo(
+          id: doc.id,
+          title: doc['title'],
+          category: doc['category'], content: '',
+        );
+      }).toList();
+    });
   }
+}
