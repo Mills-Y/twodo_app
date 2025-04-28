@@ -14,10 +14,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: BlocProvider(
-            create: (context) => TodoBloc(SharedPreferences.getInstance() as SharedPreferences),
-        child: TodoScreen(),
+          create: (context) => TodoBloc(SharedPreferences.getInstance() as SharedPreferences),
+          child: TodoScreen(),
+        ),
       ),
-    ),
     );
 
     // Verify that the initial state is empty.
@@ -46,10 +46,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: BlocProvider(
-            create: (context) => TodoBloc(SharedPreferences.getInstance() as SharedPreferences),
-        child: TodoScreen(),
+          create: (context) => TodoBloc(SharedPreferences.getInstance() as SharedPreferences),
+          child: TodoScreen(),
+        ),
       ),
-    ),
     );
 
     // Add a new Todo item.
@@ -73,5 +73,5 @@ void main() {
     // Verify that the edited Todo item is displayed.
     expect(find.text('Edited Todo Item'), findsOneWidget);
     expect(find.text('Todo to Edit'), findsNothing);
-    });
+  });
 }
