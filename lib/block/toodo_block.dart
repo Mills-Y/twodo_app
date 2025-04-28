@@ -4,41 +4,7 @@ import 'package:equatable/equatable.dart';
 import 'dart:convert';
 import '../models/todo_model.dart';
 
-// --- Toodo Model ---
-class Toodo extends Equatable {
-  final String id;
-  final String title;
-  final String category;
-  final String content;
-  final DateTime? dueDate;
 
-  const Toodo({
-    required this.id,
-    required this.title,
-    required this.content,
-    required this.category,
-    this.dueDate,
-  });
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'content': content,
-    'category': category,
-    'dueDate': dueDate?.toIso8601String(),
-  };
-
-  factory Toodo.fromJson(Map<String, dynamic> json) => Toodo(
-    id: json['id'],
-    title: json['title'],
-    content: json['content'],
-    category: json['category'],
-    dueDate: json['dueDate'] != null ? DateTime.parse(json['dueDate']) : null,
-  );
-
-  @override
-  List<Object?> get props => [id, title, content, category, dueDate];
-}
 
 // --- Events ---
 abstract class ToodoEvent extends Equatable {
@@ -48,14 +14,14 @@ abstract class ToodoEvent extends Equatable {
 }
 
 class ToodoAdded extends ToodoEvent {
-  final Toodo todo;
+  final Todo todo;
   const ToodoAdded(this.todo);
   @override
   List<Object?> get props => [todo];
 }
 
 class EditToodo extends ToodoEvent {
-  final Toodo todo;
+  final Todo todo;
   const EditToodo(this.todo);
   @override
   List<Object?> get props => [todo];
@@ -88,8 +54,8 @@ class ToodoInitial extends ToodoState {}
 class ToodoLoading extends ToodoState {}
 
 class ToodoLoaded extends ToodoState {
-  final List<Toodo> workTodos;
-  final List<Toodo> personalTodos;
+  final List<Todo> workTodos;
+  final List<Todo> personalTodos;
   final String selectedCategory;
 
   ToodoLoaded(this.workTodos, this.personalTodos, this.selectedCategory);
@@ -107,7 +73,7 @@ class ToodoError extends ToodoState {
 
 // --- Bloc ---
 class TodoBloc extends Bloc<ToodoEvent, ToodoState> {
-  List<Toodo> _todos = [];
+  List<Todo> _todos = [];
   String selectedCategory = 'All';
   static const String _todosKey = 'todos';
   final SharedPreferences _prefs;
@@ -118,16 +84,13 @@ class TodoBloc extends Bloc<ToodoEvent, ToodoState> {
     on<ToodoRequested>(_onTodoRequested);
     on<CategoryChanged>(_onCategoryChanged);
     on<EditToodo>(_onEditTodo);
-    _loadTodos();
-    // Load todos when the block is initialized
-    add(ToodoRequested());
+    add(ToodoRequested()); // Load todos when the bloc is initialized
   }
 
   Future<void> _onTodoRequested(ToodoRequested event, Emitter<ToodoState> emit) async {
     emit(ToodoLoading());
     try {
       await _loadTodos();
-      _todos.sort((a, b) => a.dueDate?.compareTo(b.dueDate ?? DateTime.now()) ?? 0);
       emit(_filterTodosByCategory());
     } catch (e) {
       emit(ToodoError('Failed to load todos: $e'));
@@ -143,9 +106,9 @@ class TodoBloc extends Bloc<ToodoEvent, ToodoState> {
   Future<void> _onEditTodo(EditToodo event, Emitter<ToodoState> emit) async {
     final index = _todos.indexWhere((todo) => todo.id == event.todo.id);
     if (index != -1) {
-      _todos[index] = event.todo; // Update the todo in the list
-      await _saveTodos(); // Save the updated list
-      emit(_filterTodosByCategory()); // Emit the updated state
+      _todos[index] = event.todo;
+      await _saveTodos();
+      emit(_filterTodosByCategory());
     } else {
       print('Todo with id ${event.todo.id} not found.');
     }
@@ -166,7 +129,7 @@ class TodoBloc extends Bloc<ToodoEvent, ToodoState> {
     final todosJson = _prefs.getString(_todosKey);
     if (todosJson != null) {
       final List<dynamic> decodedList = json.decode(todosJson);
-      _todos = decodedList.map((json) => Toodo.fromJson(json)).toList();
+      _todos = decodedList.map((json) => Todo.fromJson(json)).toList();
     } else {
       _todos = [];
     }
@@ -178,17 +141,16 @@ class TodoBloc extends Bloc<ToodoEvent, ToodoState> {
   }
 
   ToodoLoaded _filterTodosByCategory() {
-    List<Toodo> filteredWorkTodos = [];
-    List<Toodo> filteredPersonalTodos = [];
+    List<Todo> filteredWorkTodos = [];
+    List<Todo> filteredPersonalTodos = [];
 
-    for (Toodo todo in _todos) {
+    for (Todo todo in _todos) {
       if (todo.category == 'Work') {
         filteredWorkTodos.add(todo);
       } else if (todo.category == 'Personal') {
         filteredPersonalTodos.add(todo);
       }
     }
-    // Return filtered todos based on the selected category
     if (selectedCategory == 'Work') {
       return ToodoLoaded(filteredWorkTodos, [], selectedCategory);
     } else if (selectedCategory == 'Personal') {
